@@ -18,6 +18,7 @@ import platform
 from ctypes import *
 from PIL import Image
 import sys
+from epics import pv
 
 """Andor class which is meant to provide the Python version of the same
    functions that are defined in the Andor's SDK. Since Python does not
@@ -77,6 +78,12 @@ class Andor:
         self.vstart      = 1
         self.vend        = ch
         self.cooler      = None
+		
+		# EPICS Charge Protection
+		q_ChID = 'EBT-INJ-SCOPE-01:P1'
+		self.qPV = pv(q_ChID)
+		self.qVal = self.qPV.get
+		self.qPV.add_callback(callback=qChange)		
         
     def __del__(self):
         error = self.dll.ShutDown()
@@ -491,6 +498,15 @@ class Andor:
             self.SetImage(4,4,1,self.width,1,self.height)
         else:
             self.verbose("Binning mode not found")
+	
+	def qChange(self, pvname = None, value = None, char_value = None):
+		self.qVal = value
+		if self.qVal > 25:
+			self.GetEMCCDGain()
+			if self.gain > 1:
+				self.SetEMCCDGain(1)
+				print 'Charge above 25 pC, setting gain to 1'
+
 
 ERROR_CODE = {
     20001: "DRV_ERROR_CODES",
