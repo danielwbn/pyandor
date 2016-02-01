@@ -17,8 +17,9 @@
 import platform
 from ctypes import *
 from PIL import Image
+
 import sys
-from epics import pv
+#from epics import pv
 
 """Andor class which is meant to provide the Python version of the same
    functions that are defined in the Andor's SDK. Since Python does not
@@ -42,7 +43,8 @@ class Andor:
             dllname = "/usr/local/lib/libandor.so"
             self.dll = cdll.LoadLibrary(dllname)
         else:
-            raise RuntimeError("Cannot detect operating system, wil now stop")
+            raise RuntimeError("Cannot detect operating system, will now stop")
+
 
         self.Initialize()
 
@@ -56,7 +58,6 @@ class Andor:
         self.set_T = None
         self.gain = None
         self.gainRange = None
-        self.error = None
         self.status = ERROR_CODE[error]
         self.verbosity = True
         self.preampgain = None
@@ -80,11 +81,11 @@ class Andor:
         self.cooler = None
 
         # EPICS Charge Protection
-        q_ChID = 'EBT-INJ-SCOPE-01:P1'
-        self.qPV = pv(q_ChID)
-        self.qVal = self.qPV.get
-
-        self.qPV.add_callback(callback=qChange)
+        # q_ChID = 'EBT-INJ-SCOPE-01:P1'
+        # self.qPV = pv(q_ChID)
+        # self.qVal = self.qPV.get
+        #
+        # self.qPV.add_callback(callback=qChange)
 
     def __del__(self):
         error = self.dll.ShutDown()

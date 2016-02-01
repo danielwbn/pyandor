@@ -58,13 +58,12 @@ class AndorIdus():
             dllname = "C:\\Program Files\\Andor iDus\\ATMCD32D"
             self._dll = windll.LoadLibrary(dllname)
         else:
-            print "Cannot detect operating system, wil now stop"
-            raise
+            raise RuntimeError("Cannot detect operating system, wil now stop")
 
         # Initialize the device
         tekst = c_char()
         error = self._dll.Initialize(byref(tekst))
-        print "Initializing: %s" % ( ERROR_CODE[error])
+        print("Initializing: %s" % ( ERROR_CODE[error]))
 
         cw = c_int()
         ch = c_int()
@@ -170,7 +169,7 @@ class AndorIdus():
             None
         '''
         if self._verbosity is True:
-            print "[%s]: %s" % (self.FUNC(1), error)
+            print("[%s]: %s" % (self.FUNC(1), error))
 
     def SetVerbose(self, state=True):
         '''
@@ -304,8 +303,7 @@ class AndorIdus():
         error = self._dll.GetTemperature(byref(ctemperature))
         self._temperature = ctemperature.value
         self._Verbose(ERROR_CODE[error] )
-        print "Temperature is: %g [Set T: %g]" \
-            % (self._temperature, self._set_T)
+        print("Temperature is: %g [Set T: %g]" % (self._temperature, self._set_T))
         return ERROR_CODE[error]
 
     def SetTemperature(self, temperature): # Fixme:, see if this works
@@ -554,7 +552,7 @@ class AndorIdus():
         elif self._ReadMode == 4:
             dim = self._width * self._height
             
-        print "Dim is %s" % dim
+        print("Dim is %s" % dim)
         cimageArray = c_int * dim
         cimage = cimageArray()
         error = self._dll.GetAcquiredData(pointer(cimage), dim)
@@ -830,7 +828,7 @@ class AndorIdus():
         '''
         self.SetReadMode(4)
         self.SetAcquisitionMode(1)
-        print "Width: %d Height: %d" % (self._width, self._height)
+        print("Width: %d Height: %d" % (self._width, self._height))
         self.SetImage(1, 1, 1, self._width, 1, self._height)
 
     def SetSingleFVB(self):
@@ -969,7 +967,7 @@ class AndorIdus():
         pix = im.load()
         maxIntensity = max(self._imageArray)
         minIntensity = min(self._imageArray)
-        print maxIntensity, minIntensity
+        print(maxIntensity, minIntensity)
         for i in range(len(self._imageArray)):
             (row, col) = divmod(i, self._width)
             picvalue = int(round((self._imageArray[i]-minIntensity)*255.0/
@@ -1024,14 +1022,14 @@ class AndorIdus():
         i = 0
         while i < 4:
             i += 1
-            print self.GetTemperature()
-            print self._temperature
-            print "Ready for Acquisition"
+            print(self.GetTemperature())
+            print(self._temperature)
+            print("Ready for Acquisition")
             self.StartAcquisition()
 
             # Check for status
             while self.GetStatus() is not 'DRV_IDLE':
-                print "Data not yet acquired, waiting 0.5s"
+                print("Data not yet acquired, waiting 0.5s")
                 time.sleep(0.5)
 
             data = []
@@ -1058,14 +1056,14 @@ class AndorIdus():
         i = 0
         while i < 4:
             i += 1
-            print self.GetTemperature()
-            print self._temperature
-            print "Ready for Acquisition"
+            print(self.GetTemperature())
+            print(self._temperature)
+            print("Ready for Acquisition")
             self.StartAcquisition()
 
             # Check for status
             while self.GetStatus() is not 'DRV_IDLE':
-                print "Data not yet acquired, waiting 0.5s"
+                print("Data not yet acquired, waiting 0.5s")
                 time.sleep(0.5)
 
             data = []

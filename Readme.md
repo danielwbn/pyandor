@@ -5,7 +5,7 @@ The main modules is 'andor.py'. This module has been tested both in Windows and 
 
 Simple example:
 
-
+```
 import pyandor
 
 cam = Andor()
@@ -15,3 +15,4 @@ data = []
 cam.GetAcquiredData(data)
 cam.SaveAsTxt("raw.txt")
 cam.ShutDown()
+```
