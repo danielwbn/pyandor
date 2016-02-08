@@ -15,11 +15,12 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import platform
+import sys
 from ctypes import *
+
 from PIL import Image
 
-import sys
-#from epics import pv
+# from epics import pv
 
 """Andor class which is meant to provide the Python version of the same
    functions that are defined in the Andor's SDK. Since Python does not
@@ -45,12 +46,12 @@ class Andor:
         else:
             raise RuntimeError("Cannot detect operating system, will now stop")
 
-
         self.Initialize()
 
         cw = c_int()
         ch = c_int()
-        self.dll.GetDetector(byref(cw), byref(ch))
+        error = self.dll.GetDetector(byref(cw), byref(ch))
+        print(ERROR_CODE[error])
 
         self.width = cw.value
         self.height = ch.value
@@ -95,7 +96,7 @@ class Andor:
             print("[%s]: %s" % (function, error))
 
     def SetVerbose(self, state=True):
-        self.verbose = state
+        self.verbosity = state
 
     def AbortAcquisition(self):
         error = self.dll.AbortAcquisition()
@@ -106,7 +107,7 @@ class Andor:
         tekst = c_char()
         error = self.dll.Initialize(byref(tekst))
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
-        return ERROR_CODE[error]
+        return error
 
     def ShutDown(self):
         error = self.dll.ShutDown()
