@@ -522,8 +522,8 @@ class Camera():
     def SetDemoReady(self):
         error = self.SetSingleScan()
         error = self.SetTriggerMode(0)
-        error = self.SetShutter(1, 0, 30, 30)
-        error = self.SetExposureTime(0.5)
+        error = self.SetShutter(1, 0, 50, 50)
+        error = self.SetExposureTime(5.0)
         return error
 
     def SetBinning(self, binningmode):
