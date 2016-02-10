@@ -54,13 +54,13 @@ class Camera():
         # for Windows
         if platform.system() == "Windows":
             if platform.architecture()[0] == "64bit":
-                self.init_path = "C:\\Program Files\\Andor SOLIS\\"
+                self._init_path = "C:\\Program Files\\Andor SOLIS\\"
                 self._dll = cdll.LoadLibrary("C:\\Program Files\\Andor SOLIS\\atmcd64d_legacy")
             else:
                 raise RuntimeError("Only 64bit Version is supported")
         # for Linux
         elif platform.system() == "Linux":
-            self.init_path = "/usr/local/etc/andor"
+            self._init_path = "/usr/local/etc/andor"
             dllname = "/usr/local/lib/libandor.so"
             self._dll = cdll.LoadLibrary(dllname)
         else:
@@ -69,7 +69,7 @@ class Camera():
         self._verbosity = True
 
         # Initialize the device
-        error = self.Initialize(self.init_path)
+        error = self.Initialize(self._init_path)
         print("Initializing: %s" % (ERROR_CODE[error]))
 
         cw = c_int()
@@ -104,11 +104,12 @@ class Camera():
         self._noADChannels = None
         self._noHSSpeeds   = None
         self._ReadMode     = None
+        self._cooling      = False
 
 
     def __del__(self):
         self.SetTemperature(-10)
-        if self.cooler :
+        if self._cooling :
             warm = False
             while not warm:
                 time.sleep(0.5)
@@ -144,7 +145,7 @@ class Camera():
     def GetCameraSerialNumber(self):
         serial = c_int()
         error = self._dll.GetCameraSerialNumber(byref(serial))
-        self.serial = serial.value
+        self._serial = serial.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
@@ -155,7 +156,7 @@ class Camera():
         # 3: single track
         # 4: image
         error = self._dll.SetReadMode(mode)
-        self.ReadMode = mode
+        self._ReadMode = mode
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
@@ -164,13 +165,13 @@ class Camera():
         # 3: Kinetic scan
         error = self._dll.SetAcquisitionMode(mode)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
-        self.AcquisitionMode = mode
+        self._AcquisitionMode = mode
         return ERROR_CODE[error]
 
     def SetNumberKinetics(self, numKin):
         error = self._dll.SetNumberKinetics(numKin)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
-        self.scans = numKin
+        self._scans = numKin
         return ERROR_CODE[error]
 
     def SetNumberAccumulations(self, number):
@@ -194,12 +195,12 @@ class Camera():
         return ERROR_CODE[error]
 
     def SetImage(self, hbin, vbin, hstart, hend, vstart, vend):
-        self.hbin = hbin
-        self.vbin = vbin
-        self.hstart = hstart
-        self.hend = hend
-        self.vstart = vstart
-        self.vend = vend
+        self._hbin = hbin
+        self._vbin = vbin
+        self._hstart = hstart
+        self._hend = hend
+        self._vstart = vstart
+        self._vend = vend
 
         error = self._dll.SetImage(hbin, vbin, hstart, hend, vstart, vend)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
@@ -214,14 +215,14 @@ class Camera():
     def GetAcquiredData(self, imageArray):
         if (self.ReadMode == 4):
             if (self.AcquisitionMode == 1):
-                dim = self.width * self.height / self.hbin / self.vbin
+                dim = self._width * self._height / self._hbin / self._vbin
             elif (self.AcquisitionMode == 3):
-                dim = self.width * self.height / self.hbin / self.vbin * self.scans
-        elif (self.ReadMode == 3 or self.ReadMode == 0):
+                dim = self._width * self._height / self._hbin / self._vbin * self._scans
+        elif (self._ReadMode == 3 or self._ReadMode == 0):
             if (self.AcquisitionMode == 1):
-                dim = self.width
-            elif (self.AcquisitionMode == 3):
-                dim = self.width * self.scans
+                dim = self._width
+            elif (self._AcquisitionMode == 3):
+                dim = self._width * self._scans
 
         cimageArray = c_int * dim
         cimage = cimageArray()
@@ -231,13 +232,13 @@ class Camera():
         for i in range(len(cimage)):
             imageArray.append(cimage[i])
 
-        self.imageArray = imageArray[:]
+        self._imageArray = imageArray[:]
         # self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def SetExposureTime(self, time):
         error = self._dll.SetExposureTime(c_float(time))
-        self.exposure = time
+        self._exposure = time
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
@@ -246,16 +247,16 @@ class Camera():
         accumulate = c_float()
         kinetic = c_float()
         error = self._dll.GetAcquisitionTimings(byref(exposure), byref(accumulate), byref(kinetic))
-        self.exposure = exposure.value
-        self.accumulate = accumulate.value
-        self.kinetic = kinetic.value
+        self._exposure = exposure.value
+        self._accumulate = accumulate.value
+        self._kinetic = kinetic.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def SetSingleScan(self):
         self.SetReadMode(4)
         self.SetAcquisitionMode(1)
-        self.SetImage(1, 1, 1, self.width, 1, self.height)
+        self.SetImage(1, 1, 1, self._width, 1, self._height)
 
     def SetCoolerMode(self, mode):
         error = self._dll.SetCoolerMode(mode)
@@ -263,12 +264,12 @@ class Camera():
         return ERROR_CODE[error]
 
     def SaveAsBmp(self, path):
-        im = Image.new("RGB", (self.width, self.height), "white")
+        im = Image.new("RGB", (self._width, self._height), "white")
         pix = im.load()
 
-        for i in range(len(self.imageArray)):
-            (row, col) = divmod(i, self.width)
-            picvalue = int(round(self.imageArray[i] * 255.0 / 65535))
+        for i in range(len(self._imageArray)):
+            (row, col) = divmod(i, self._width)
+            picvalue = int(round(self._imageArray[i] * 255.0 / 65535))
             pix[col, row] = (picvalue, picvalue, picvalue)
 
         im.save(path, "BMP")
@@ -276,7 +277,7 @@ class Camera():
     def SaveAsTxt(self, path):
         file = open(path, 'w')
 
-        for line in self.imageArray:
+        for line in self._imageArray:
             file.write("%g\n" % line)
 
         file.close()
@@ -287,14 +288,14 @@ class Camera():
 
     def SaveAsBmpNormalised(self, path):
 
-        im = Image.new("RGB", (self.width, self.height), "white")
+        im = Image.new("RGB", (self._width, self._height), "white")
         pix = im.load()
 
-        maxIntensity = max(self.imageArray)
+        maxIntensity = max(self._imageArray)
 
-        for i in range(len(self.imageArray)):
-            (row, col) = divmod(i, self.width)
-            picvalue = int(round(self.imageArray[i] * 255.0 / maxIntensity))
+        for i in range(len(self._imageArray)):
+            (row, col) = divmod(i, self._width)
+            picvalue = int(round(self._imageArray[i] * 255.0 / maxIntensity))
             pix[col, row] = (picvalue, picvalue, picvalue)
 
         im.save(path, "BMP")
@@ -306,27 +307,27 @@ class Camera():
 
     def CoolerON(self):
         error = self._dll.CoolerON()
-        self.cooler = 1
+        self._cooling = True
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def CoolerOFF(self):
         error = self._dll.CoolerOFF()
-        self.cooler = 0
+        self._cooling = False
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def IsCoolerOn(self):
         iCoolerStatus = c_int()
-        self.cooler = iCoolerStatus
         error = self._dll.IsCoolerOn(byref(iCoolerStatus))
+        self._cooling = iCoolerStatus
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return iCoolerStatus.value
 
     def GetTemperature(self):
         ctemperature = c_int()
         error = self._dll.GetTemperature(byref(ctemperature))
-        self.temperature = ctemperature.value
+        self._temperature = ctemperature.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
@@ -334,14 +335,14 @@ class Camera():
         # ctemperature = c_int(temperature)
         # error = self.dll.SetTemperature(byref(ctemperature))
         error = self._dll.SetTemperature(temperature)
-        self.set_T = temperature
+        self._set_T = temperature
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def GetEMCCDGain(self):
         gain = c_int()
         error = self._dll.GetEMCCDGain(byref(gain))
-        self.gain = gain.value
+        self._gain = gain.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
@@ -364,49 +365,49 @@ class Camera():
         low = c_int()
         high = c_int()
         error = self._dll.GetEMGainRange(byref(low), byref(high))
-        self.gainRange = (low.value, high.value)
+        self._gainRange = (low.value, high.value)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def GetNumberADChannels(self):
         noADChannels = c_int()
         error = self._dll.GetNumberADChannels(byref(noADChannels))
-        self.noADChannels = noADChannels.value
+        self._noADChannels = noADChannels.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def GetBitDepth(self):
         bitDepth = c_int()
 
-        self.bitDepths = []
+        self._bitDepths = []
 
-        for i in range(self.noADChannels):
+        for i in range(self._noADChannels):
             self._dll.GetBitDepth(i, byref(bitDepth))
-            self.bitDepths.append(bitDepth.value)
+            self._bitDepths.append(bitDepth.value)
 
     def SetADChannel(self, index):
         error = self._dll.SetADChannel(index)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
-        self.channel = index
+        self._channel = index
         return ERROR_CODE[error]
 
     def SetOutputAmplifier(self, index):
         error = self._dll.SetOutputAmplifier(index)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
-        self.outamp = index
+        self._outamp = index
         return ERROR_CODE[error]
 
     def GetNumberHSSpeeds(self):
         noHSSpeeds = c_int()
         error = self._dll.GetNumberHSSpeeds(self.channel, self.outamp, byref(noHSSpeeds))
-        self.noHSSpeeds = noHSSpeeds.value
+        self._noHSSpeeds = noHSSpeeds.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def GetHSSpeed(self):
         HSSpeed = c_float()
 
-        self.HSSpeeds = []
+        self._HSSpeeds = []
 
         for i in range(self.noHSSpeeds):
             self._dll.GetHSSpeed(self.channel, self.outamp, i, byref(HSSpeed))
@@ -415,51 +416,51 @@ class Camera():
     def SetHSSpeed(self, itype, index):
         error = self._dll.SetHSSpeed(itype, index)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
-        self.hsspeed = index
+        self._hsspeed = index
         return ERROR_CODE[error]
 
     def GetNumberVSSpeeds(self):
         noVSSpeeds = c_int()
         error = self._dll.GetNumberVSSpeeds(byref(noVSSpeeds))
-        self.noVSSpeeds = noVSSpeeds.value
+        self._noVSSpeeds = noVSSpeeds.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def GetVSSpeed(self):
         VSSpeed = c_float()
 
-        self.VSSpeeds = []
+        self._VSSpeeds = []
 
-        for i in range(self.noVSSpeeds):
+        for i in range(self._noVSSpeeds):
             self._dll.GetVSSpeed(i, byref(VSSpeed))
-            self.preVSpeeds.append(VSSpeed.value)
+            self._preVSpeeds.append(VSSpeed.value)
 
     def SetVSSpeed(self, index):
         error = self._dll.SetVSSpeed(index)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
-        self.vsspeed = index
+        self._vsspeed = index
         return ERROR_CODE[error]
 
     def GetNumberPreAmpGains(self):
         noGains = c_int()
         error = self._dll.GetNumberPreAmpGains(byref(noGains))
-        self.noGains = noGains.value
+        self._noGains = noGains.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def GetPreAmpGain(self):
         gain = c_float()
 
-        self.preAmpGain = []
+        self._preAmpGain = []
 
-        for i in range(self.noGains):
+        for i in range(self._noGains):
             self._dll.GetPreAmpGain(i, byref(gain))
-            self.preAmpGain.append(gain.value)
+            self._preAmpGain.append(gain.value)
 
     def SetPreAmpGain(self, index):
         error = self._dll.SetPreAmpGain(index)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
-        self.preampgain = index
+        self._preampgain = index
         return ERROR_CODE[error]
 
     def SetTriggerMode(self, mode):
@@ -470,9 +471,9 @@ class Camera():
     def GetStatus(self):
         status = c_int()
         error = self._dll.GetStatus(byref(status))
-        self.status = ERROR_CODE[status.value]
+        self._status = ERROR_CODE[status.value]
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
-        return self.status
+        return self._status
 
     def GetSeriesProgress(self):
         acc = c_long()
@@ -521,19 +522,19 @@ class Camera():
 
     def SetBinning(self, binningmode):
         if (binningmode == 1):
-            self.SetImage(1, 1, 1, self.width, 1, self.height)
+            self.SetImage(1, 1, 1, self._width, 1, self._height)
         elif (binningmode == 2):
-            self.SetImage(2, 2, 1, self.width, 1, self.height)
+            self.SetImage(2, 2, 1, self._width, 1, self._height)
         elif (binningmode == 4):
-            self.SetImage(4, 4, 1, self.width, 1, self.height)
+            self.SetImage(4, 4, 1, self._width, 1, self._height)
         else:
             self.verbose("Binning mode not found")
 
     def qChange(self, pvname=None, value=None, char_value=None):
-        self.qVal = value
-        if self.qVal > 25:
+        self._qVal = value
+        if self._qVal > 25:
             self.GetEMCCDGain()
-            if self.gain > 1:
+            if self._gain > 1:
                 self.SetEMCCDGain(1)
                 print('Charge above 25 pC, setting gain to 1')
 
