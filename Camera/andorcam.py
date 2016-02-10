@@ -58,16 +58,18 @@ class Andor():
         if platform.system() == "Windows":
             if platform.architecture()[0] == "64bit":
                 self.init_path = "C:\\Program Files\\Andor SOLIS\\"
-                self.dll = cdll.LoadLibrary("C:\\Program Files\\Andor SOLIS\\atmcd64d_legacy")
+                self._dll = cdll.LoadLibrary("C:\\Program Files\\Andor SOLIS\\atmcd64d_legacy")
             else:
                 raise RuntimeError("Only 64bit Version is supported")
         # for Linux
-        if platform.system() == "Linux":
+        elif platform.system() == "Linux":
             self.init_path = "/usr/local/etc/andor"
             dllname = "/usr/local/lib/libandor.so"
-            self.dll = cdll.LoadLibrary(dllname)
+            self._dll = cdll.LoadLibrary(dllname)
         else:
             raise RuntimeError("Cannot detect operating system, will now stop")
+
+        self._verbosity = True
 
         # Initialize the device
         error = self.Initialize(self.init_path)
@@ -109,41 +111,42 @@ class Andor():
 
     def __del__(self):
         self.SetTemperature(-10)
-        warm = False
-        while not warm:
-            time.sleep(0.5)
-            temp = self.GetTemperature
-            if temp > -13:
-                warm = True
-        self.CoolerOFF()
-        error = self.dll.ShutDown()
+        if self.cooler :
+            warm = False
+            while not warm:
+                time.sleep(0.5)
+                temp = self.GetTemperature
+                if temp > -13:
+                    warm = True
+            self.CoolerOFF()
+        error = self._dll.ShutDown()
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
 
     def verbose(self, error, function=''):
-        if self.verbosity is True:
+        if self._verbosity is True:
             print("[%s]: %s" % (function, error))
 
     def SetVerbose(self, state=True):
-        self.verbosity = state
+        self._verbosity = state
 
     def AbortAcquisition(self):
-        error = self.dll.AbortAcquisition()
+        error = self._dll.AbortAcquisition()
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def Initialize(self, path):
-        error = self.dll.Initialize(path)
+        error = self._dll.Initialize(path)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return error
 
     def ShutDown(self):
-        error = self.dll.ShutDown()
+        error = self._dll.ShutDown()
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def GetCameraSerialNumber(self):
         serial = c_int()
-        error = self.dll.GetCameraSerialNumber(byref(serial))
+        error = self._dll.GetCameraSerialNumber(byref(serial))
         self.serial = serial.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
@@ -154,7 +157,7 @@ class Andor():
         # 2: random track
         # 3: single track
         # 4: image
-        error = self.dll.SetReadMode(mode)
+        error = self._dll.SetReadMode(mode)
         self.ReadMode = mode
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
@@ -162,34 +165,34 @@ class Andor():
     def SetAcquisitionMode(self, mode):
         # 1: Single scan
         # 3: Kinetic scan
-        error = self.dll.SetAcquisitionMode(mode)
+        error = self._dll.SetAcquisitionMode(mode)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         self.AcquisitionMode = mode
         return ERROR_CODE[error]
 
     def SetNumberKinetics(self, numKin):
-        error = self.dll.SetNumberKinetics(numKin)
+        error = self._dll.SetNumberKinetics(numKin)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         self.scans = numKin
         return ERROR_CODE[error]
 
     def SetNumberAccumulations(self, number):
-        error = self.dll.SetNumberAccumulations(number)
+        error = self._dll.SetNumberAccumulations(number)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def SetAccumulationCycleTime(self, time):
-        error = self.dll.SetAccumulationCycleTime(c_float(time))
+        error = self._dll.SetAccumulationCycleTime(c_float(time))
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def SetKineticCycleTime(self, time):
-        error = self.dll.SetKineticCycleTime(c_float(time))
+        error = self._dll.SetKineticCycleTime(c_float(time))
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def SetShutter(self, typ, mode, closingtime, openingtime):
-        error = self.dll.SetShutter(typ, mode, closingtime, openingtime)
+        error = self._dll.SetShutter(typ, mode, closingtime, openingtime)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
@@ -201,13 +204,13 @@ class Andor():
         self.vstart = vstart
         self.vend = vend
 
-        error = self.dll.SetImage(hbin, vbin, hstart, hend, vstart, vend)
+        error = self._dll.SetImage(hbin, vbin, hstart, hend, vstart, vend)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def StartAcquisition(self):
-        error = self.dll.StartAcquisition()
-        self.dll.WaitForAcquisition()
+        error = self._dll.StartAcquisition()
+        self._dll.WaitForAcquisition()
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
@@ -225,7 +228,7 @@ class Andor():
 
         cimageArray = c_int * dim
         cimage = cimageArray()
-        error = self.dll.GetAcquiredData(pointer(cimage), dim)
+        error = self._dll.GetAcquiredData(pointer(cimage), dim)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
 
         for i in range(len(cimage)):
@@ -236,7 +239,7 @@ class Andor():
         return ERROR_CODE[error]
 
     def SetExposureTime(self, time):
-        error = self.dll.SetExposureTime(c_float(time))
+        error = self._dll.SetExposureTime(c_float(time))
         self.exposure = time
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
@@ -245,7 +248,7 @@ class Andor():
         exposure = c_float()
         accumulate = c_float()
         kinetic = c_float()
-        error = self.dll.GetAcquisitionTimings(byref(exposure), byref(accumulate), byref(kinetic))
+        error = self._dll.GetAcquisitionTimings(byref(exposure), byref(accumulate), byref(kinetic))
         self.exposure = exposure.value
         self.accumulate = accumulate.value
         self.kinetic = kinetic.value
@@ -258,7 +261,7 @@ class Andor():
         self.SetImage(1, 1, 1, self.width, 1, self.height)
 
     def SetCoolerMode(self, mode):
-        error = self.dll.SetCoolerMode(mode)
+        error = self._dll.SetCoolerMode(mode)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
@@ -282,7 +285,7 @@ class Andor():
         file.close()
 
     def SetImageRotate(self, iRotate):
-        error = self.dll.SetImageRotate(iRotate)
+        error = self._dll.SetImageRotate(iRotate)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
 
     def SaveAsBmpNormalised(self, path):
@@ -300,18 +303,18 @@ class Andor():
         im.save(path, "BMP")
 
     def SaveAsFITS(self, filename, type):
-        error = self.dll.SaveAsFITS(filename, type)
+        error = self._dll.SaveAsFITS(filename, type)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def CoolerON(self):
-        error = self.dll.CoolerON()
+        error = self._dll.CoolerON()
         self.cooler = 1
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def CoolerOFF(self):
-        error = self.dll.CoolerOFF()
+        error = self._dll.CoolerOFF()
         self.cooler = 0
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
@@ -319,13 +322,13 @@ class Andor():
     def IsCoolerOn(self):
         iCoolerStatus = c_int()
         self.cooler = iCoolerStatus
-        error = self.dll.IsCoolerOn(byref(iCoolerStatus))
+        error = self._dll.IsCoolerOn(byref(iCoolerStatus))
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return iCoolerStatus.value
 
     def GetTemperature(self):
         ctemperature = c_int()
-        error = self.dll.GetTemperature(byref(ctemperature))
+        error = self._dll.GetTemperature(byref(ctemperature))
         self.temperature = ctemperature.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
@@ -333,44 +336,44 @@ class Andor():
     def SetTemperature(self, temperature):
         # ctemperature = c_int(temperature)
         # error = self.dll.SetTemperature(byref(ctemperature))
-        error = self.dll.SetTemperature(temperature)
+        error = self._dll.SetTemperature(temperature)
         self.set_T = temperature
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def GetEMCCDGain(self):
         gain = c_int()
-        error = self.dll.GetEMCCDGain(byref(gain))
+        error = self._dll.GetEMCCDGain(byref(gain))
         self.gain = gain.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def SetEMCCDGainMode(self, gainMode):
-        error = self.dll.SetEMCCDGainMode(gainMode)
+        error = self._dll.SetEMCCDGainMode(gainMode)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def SetEMCCDGain(self, gain):
-        error = self.dll.SetEMCCDGain(gain)
+        error = self._dll.SetEMCCDGain(gain)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def SetEMAdvanced(self, gainAdvanced):
-        error = self.dll.SetEMAdvanced(gainAdvanced)
+        error = self._dll.SetEMAdvanced(gainAdvanced)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def GetEMGainRange(self):
         low = c_int()
         high = c_int()
-        error = self.dll.GetEMGainRange(byref(low), byref(high))
+        error = self._dll.GetEMGainRange(byref(low), byref(high))
         self.gainRange = (low.value, high.value)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def GetNumberADChannels(self):
         noADChannels = c_int()
-        error = self.dll.GetNumberADChannels(byref(noADChannels))
+        error = self._dll.GetNumberADChannels(byref(noADChannels))
         self.noADChannels = noADChannels.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
@@ -381,24 +384,24 @@ class Andor():
         self.bitDepths = []
 
         for i in range(self.noADChannels):
-            self.dll.GetBitDepth(i, byref(bitDepth))
+            self._dll.GetBitDepth(i, byref(bitDepth))
             self.bitDepths.append(bitDepth.value)
 
     def SetADChannel(self, index):
-        error = self.dll.SetADChannel(index)
+        error = self._dll.SetADChannel(index)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         self.channel = index
         return ERROR_CODE[error]
 
     def SetOutputAmplifier(self, index):
-        error = self.dll.SetOutputAmplifier(index)
+        error = self._dll.SetOutputAmplifier(index)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         self.outamp = index
         return ERROR_CODE[error]
 
     def GetNumberHSSpeeds(self):
         noHSSpeeds = c_int()
-        error = self.dll.GetNumberHSSpeeds(self.channel, self.outamp, byref(noHSSpeeds))
+        error = self._dll.GetNumberHSSpeeds(self.channel, self.outamp, byref(noHSSpeeds))
         self.noHSSpeeds = noHSSpeeds.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
@@ -409,18 +412,18 @@ class Andor():
         self.HSSpeeds = []
 
         for i in range(self.noHSSpeeds):
-            self.dll.GetHSSpeed(self.channel, self.outamp, i, byref(HSSpeed))
-            self.HSSpeeds.append(HSSpeed.value)
+            self._dll.GetHSSpeed(self.channel, self.outamp, i, byref(HSSpeed))
+            self._HSSpeeds.append(HSSpeed.value)
 
     def SetHSSpeed(self, itype, index):
-        error = self.dll.SetHSSpeed(itype, index)
+        error = self._dll.SetHSSpeed(itype, index)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         self.hsspeed = index
         return ERROR_CODE[error]
 
     def GetNumberVSSpeeds(self):
         noVSSpeeds = c_int()
-        error = self.dll.GetNumberVSSpeeds(byref(noVSSpeeds))
+        error = self._dll.GetNumberVSSpeeds(byref(noVSSpeeds))
         self.noVSSpeeds = noVSSpeeds.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
@@ -431,18 +434,18 @@ class Andor():
         self.VSSpeeds = []
 
         for i in range(self.noVSSpeeds):
-            self.dll.GetVSSpeed(i, byref(VSSpeed))
+            self._dll.GetVSSpeed(i, byref(VSSpeed))
             self.preVSpeeds.append(VSSpeed.value)
 
     def SetVSSpeed(self, index):
-        error = self.dll.SetVSSpeed(index)
+        error = self._dll.SetVSSpeed(index)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         self.vsspeed = index
         return ERROR_CODE[error]
 
     def GetNumberPreAmpGains(self):
         noGains = c_int()
-        error = self.dll.GetNumberPreAmpGains(byref(noGains))
+        error = self._dll.GetNumberPreAmpGains(byref(noGains))
         self.noGains = noGains.value
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
@@ -453,23 +456,23 @@ class Andor():
         self.preAmpGain = []
 
         for i in range(self.noGains):
-            self.dll.GetPreAmpGain(i, byref(gain))
+            self._dll.GetPreAmpGain(i, byref(gain))
             self.preAmpGain.append(gain.value)
 
     def SetPreAmpGain(self, index):
-        error = self.dll.SetPreAmpGain(index)
+        error = self._dll.SetPreAmpGain(index)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         self.preampgain = index
         return ERROR_CODE[error]
 
     def SetTriggerMode(self, mode):
-        error = self.dll.SetTriggerMode(mode)
+        error = self._dll.SetTriggerMode(mode)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def GetStatus(self):
         status = c_int()
-        error = self.dll.GetStatus(byref(status))
+        error = self._dll.GetStatus(byref(status))
         self.status = ERROR_CODE[status.value]
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return self.status
@@ -477,7 +480,7 @@ class Andor():
     def GetSeriesProgress(self):
         acc = c_long()
         series = c_long()
-        error = self.dll.GetAcquisitionProgress(byref(acc), byref(series))
+        error = self._dll.GetAcquisitionProgress(byref(acc), byref(series))
         if ERROR_CODE[error] == "DRV_SUCCESS":
             return series.value
         else:
@@ -486,29 +489,29 @@ class Andor():
     def GetAccumulationProgress(self):
         acc = c_long()
         series = c_long()
-        error = self.dll.GetAcquisitionProgress(byref(acc), byref(series))
+        error = self._dll.GetAcquisitionProgress(byref(acc), byref(series))
         if ERROR_CODE[error] == "DRV_SUCCESS":
             return acc.value
         else:
             return None
 
     def SetFrameTransferMode(self, frameTransfer):
-        error = self.dll.SetFrameTransferMode(frameTransfer)
+        error = self._dll.SetFrameTransferMode(frameTransfer)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def SetShutterEx(self, typ, mode, closingtime, openingtime, extmode):
-        error = self.dll.SetShutterEx(typ, mode, closingtime, openingtime, extmode)
+        error = self._dll.SetShutterEx(typ, mode, closingtime, openingtime, extmode)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def SetSpool(self, active, method, path, framebuffersize):
-        error = self.dll.SetSpool(active, method, c_char_p(path), framebuffersize)
+        error = self._dll.SetSpool(active, method, c_char_p(path), framebuffersize)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
     def SetSingleTrack(self, centre, height):
-        error = self.dll.SetSingleTrack(centre, height)
+        error = self._dll.SetSingleTrack(centre, height)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
