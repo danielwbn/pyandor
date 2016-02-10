@@ -1,14 +1,15 @@
-﻿This is a small Python wrapper for Andor cameras and spectrometers. It tries to stick to the same function naming that Andor does. Therefore, it should be fairly trivial how to use it.
-The module is object oriented and keeps some information inside the class such as gain, preampgain, gainRange etc.
+﻿This is a small Python wrapper for Andor cameras and spectrometers. It tries to stick to the same function naming that Andor does. 
+Therefore, it should be fairly trivial how to use it.
+The package is object oriented and keeps some information inside the class such as gain, preampgain, gainRange etc.
 
-The main modules is 'andor.py'. This module has been tested both in Windows and Linux with Newton and EM ranges from Andor. There is another module which has been tested on Windows for iDus range.
+The package contains two modules, Andor and Shamrock. The Andor module is for use with Andor cameras, whereas the Shamrock Module is for Andor Spectrograph control.
 
 Simple example:
 
 ```
-import pyandor
+import Andor
 
-cam = Andor()
+cam = Andor.Camera()
 cam.SetDemoReady()
 cam.StartAcquisition()
 data = []
