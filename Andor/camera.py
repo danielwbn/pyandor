@@ -218,12 +218,12 @@ class Camera():
 
     def GetAcquiredData(self, imageArray):
         if (self._ReadMode == 4):
-            if (self.AcquisitionMode == 1):
+            if (self._AcquisitionMode == 1):
                 dim = self._width * self._height / self._hbin / self._vbin
-            elif (self.AcquisitionMode == 3):
+            elif (self._AcquisitionMode == 3):
                 dim = self._width * self._height / self._hbin / self._vbin * self._scans
         elif (self._ReadMode == 3 or self._ReadMode == 0):
-            if (self.AcquisitionMode == 1):
+            if (self._AcquisitionMode == 1):
                 dim = self._width
             elif (self._AcquisitionMode == 3):
                 dim = self._width * self._scans
