@@ -17,9 +17,9 @@ import sys
 import time
 from ctypes import *
 import platform
+from .errorcodes import ERROR_CODE
 
-
-class Shamrock:
+class Spectrograph:
     def __init__(self):
         # for Windows
         #self.dll2 = CDLL("C:\\Program Files\\Andor SDK\\Drivers\\Shamrock64\\atshamrock")
@@ -324,13 +324,3 @@ class Shamrock:
         return ERROR_CODE[error]
 
 
-ERROR_CODE = {
-    20201: "SHAMROCK_COMMUNICATION_ERROR",
-    20202: "SHAMROCK_SUCCESS",
-    20266: "SHAMROCK_P1INVALID",
-    20267: "SHAMROCK_P2INVALID",
-    20268: "SHAMROCK_P3INVALID",
-    20269: "SHAMROCK_P4INVALID",
-    20270: "SHAMROCK_P5INVALID",
-    20275: "SHAMROCK_NOT_INITIALIZED"
-}

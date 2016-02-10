@@ -24,24 +24,21 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
-This module offers basic functionality for the Andor iDus ans iXon
+This module offers basic functionality for the Andor Cameras
 '''
 
 # Modules for Andor functionality
-import os
 import platform
 import sys
 import time
 from ctypes import *
-
 from PIL import Image
-
 from .errorcodes import ERROR_CODE
 
 
-class Andor():
+class Camera():
     """
-    Andor class which is meant to provide the Python version of the same
+    Camera class which is meant to provide the Python version of the same
     functions that are defined in the Andor's SDK. Extensive documentation
     on the functions used and error codes can be
     found in the Andor SDK Users Guide

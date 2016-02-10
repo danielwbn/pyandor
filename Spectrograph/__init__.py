@@ -1,3 +1,0 @@
-
-
-from .shamrock import Shamrock
