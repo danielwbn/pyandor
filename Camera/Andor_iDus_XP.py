@@ -51,14 +51,19 @@ class AndorIdus():
         '''
 
         # Check operating system and load library
+        if platform.system() == "Windows":
+            if platform.architecture()[0] == "64bit":
+                self.init_path = "C:\\Program Files\\Andor SOLIS\\"
+                self.dll = cdll.LoadLibrary("C:\\Program Files\\Andor SOLIS\\atmcd64d_legacy")
+            else:
+                raise RuntimeError("Only 64bit Version is supported")
+        # for Linux
         if platform.system() == "Linux":
+            self.init_path = "/usr/local/etc/andor"
             dllname = "/usr/local/lib/libandor.so"
-            self._dll = cdll.LoadLibrary(dllname)
-        elif platform.system() == "Windows":
-            dllname = "C:\\Program Files\\Andor iDus\\ATMCD32D"
-            self._dll = windll.LoadLibrary(dllname)
+            self.dll = cdll.LoadLibrary(dllname)
         else:
-            raise RuntimeError("Cannot detect operating system, wil now stop")
+            raise RuntimeError("Cannot detect operating system, will now stop")
 
         # Initialize the device
         tekst = c_char()

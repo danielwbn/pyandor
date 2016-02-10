@@ -35,12 +35,14 @@ class Andor:
         # Check operating system and load library
         # for Windows
         if platform.system() == "Windows":
-            if platform.architecture()[0] == "32bit":
-                self.dll = cdll("C:\\Program Files\\Andor SOLIS\\Drivers\\atmcd32d")
+            if platform.architecture()[0] == "64bit":
+                self.init_path = "C:\\Program Files\\Andor SOLIS\\"
+                self.dll = cdll.LoadLibrary("C:\\Program Files\\Andor SOLIS\\atmcd64d_legacy")
             else:
-                self.dll = cdll("C:\\Program Files\\Andor SOLIS\\Drivers\\atmcd64d")
+                raise RuntimeError("Only 64bit Version is supported")
         # for Linux
         if platform.system() == "Linux":
+            self.init_path = "/usr/local/etc/andor"
             dllname = "/usr/local/lib/libandor.so"
             self.dll = cdll.LoadLibrary(dllname)
         else:
@@ -104,8 +106,8 @@ class Andor:
         return ERROR_CODE[error]
 
     def Initialize(self):
-        tekst = c_char()
-        error = self.dll.Initialize(byref(tekst))
+        buf = 'C:/Program Files/Andor SOLIS/'
+        error = self.dll.Initialize(buf)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return error
 
