@@ -112,13 +112,13 @@ class Camera():
 
 
     def __del__(self):
-        self.SetTemperature(-10)
         if self._cooling :
+            self.SetTemperature(0)
             warm = False
             while not warm:
                 time.sleep(0.5)
-                temp = self.GetTemperature
-                if temp > -13:
+                temp = self.GetTemperature()
+                if temp > 0:
                     warm = True
             self.CoolerOFF()
         error = self._dll.ShutDown()
@@ -228,7 +228,7 @@ class Camera():
             elif (self._AcquisitionMode == 3):
                 dim = self._width * self._scans
 
-        cimageArray = c_int * dim
+        cimageArray = c_int * int(round(dim,0))
         cimage = cimageArray()
         error = self._dll.GetAcquiredData(pointer(cimage), dim)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
