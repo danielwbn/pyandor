@@ -70,7 +70,11 @@ class Camera():
 
         # Initialize the device
         error = self.Initialize(self._init_path)
-        print("Initializing: %s" % (ERROR_CODE[error]))
+        if error == 20002:
+            self.GetCameraSerialNumber()
+            print("Camera %s initalized" % (self._serial))
+        else:
+            raise RuntimeError("Camera could not be initialized, aborting.")
 
         cw = c_int()
         ch = c_int()
