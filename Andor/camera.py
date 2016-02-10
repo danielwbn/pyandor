@@ -228,10 +228,9 @@ class Camera():
             elif (self._AcquisitionMode == 3):
                 dim = self._width * self._scans
 
-        print(dim)
-        dim_c = c_int(dim)
-        print(dim_c)
-        cimageArray = c_int * dim_c
+        dim = int(dim)
+        dim_c = c_int(int(dim))
+        cimageArray = c_int * dim
         cimage = cimageArray()
         error = self._dll.GetAcquiredData(pointer(cimage), dim_c)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
@@ -243,9 +242,9 @@ class Camera():
         # self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
-    def SetExposureTime(self, time):
-        error = self._dll.SetExposureTime(c_float(time))
-        self._exposure = time
+    def SetExposureTime(self, seconds):
+        error = self._dll.SetExposureTime(c_float(seconds))
+        self._exposure = seconds
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
@@ -524,7 +523,7 @@ class Camera():
         error = self.SetSingleScan()
         error = self.SetTriggerMode(0)
         error = self.SetShutter(1, 0, 30, 30)
-        error = self.SetExposureTime(0.01)
+        error = self.SetExposureTime(0.5)
         return error
 
     def SetBinning(self, binningmode):
