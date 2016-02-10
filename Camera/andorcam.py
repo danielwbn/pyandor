@@ -1,5 +1,14 @@
-#   pyAndor - A Python wrapper for Andor's scientific cameras
+# -*- coding: utf-8 -*-
+#   AndoriDus - A Python wrapper for Andor's scientific cameras
+#
+#   Original code by
 #   Copyright (C) 2009  Hamid Ohadi
+#
+#   Adapted for iDus, qtlab and Windows XP
+#   2010 Martijn Schaafsma
+#
+#   Reworked by Simon Dickreuter 2016
+#
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -14,23 +23,35 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+'''
+This module offers basic functionality for the Andor iDus ans iXon
+'''
+
+# Modules for Andor functionality
+import os
 import platform
 import sys
+import time
 from ctypes import *
 
 from PIL import Image
+
 from .errorcodes import ERROR_CODE
-# from epics import pv
-
-"""Andor class which is meant to provide the Python version of the same
-   functions that are defined in the Andor's SDK. Since Python does not
-   have pass by reference for immutable variables, some of these variables
-   are actually stored in the class instance. For example the temperature,
-   gain, gainRange, status etc. are stored in the class. """
 
 
-class Andor:
+class Andor():
+    """
+    Andor class which is meant to provide the Python version of the same
+    functions that are defined in the Andor's SDK. Extensive documentation
+    on the functions used and error codes can be
+    found in the Andor SDK Users Guide
+    """
+
     def __init__(self):
+        '''
+        Loads and initializes the hardware driver.
+        Initializes local parameters
+        '''
 
         # Check operating system and load library
         # for Windows
@@ -48,50 +69,55 @@ class Andor:
         else:
             raise RuntimeError("Cannot detect operating system, will now stop")
 
-        self.Initialize()
+        # Initialize the device
+        error = self.Initialize(self.init_path)
+        print("Initializing: %s" % (ERROR_CODE[error]))
 
         cw = c_int()
         ch = c_int()
-        error = self.dll.GetDetector(byref(cw), byref(ch))
-        print(ERROR_CODE[error])
+        self._dll.GetDetector(byref(cw), byref(ch))
 
-        self.width = cw.value
-        self.height = ch.value
-        self.temperature = None
-        self.set_T = None
-        self.gain = None
-        self.gainRange = None
-        self.status = ERROR_CODE[error]
-        self.verbosity = True
-        self.preampgain = None
-        self.channel = None
-        self.outamp = None
-        self.hsspeed = None
-        self.vsspeed = None
-        self.serial = None
-        self.exposure = None
-        self.accumulate = None
-        self.kinetic = None
-        self.ReadMode = None
-        self.AcquisitionMode = None
-        self.scans = 1
-        self.hbin = 1
-        self.vbin = 1
-        self.hstart = 1
-        self.hend = cw
-        self.vstart = 1
-        self.vend = ch
-        self.cooler = None
+        # Initiate parameters
+        self._width        = cw.value
+        self._height       = ch.value
+        self._temperature  = None
+        self._set_T        = None
+        self._gain         = None
+        self._gainRange    = None
+        self._status       = ERROR_CODE[error]
+        self._verbosity    = True
+        self._preampgain   = None
+        self._channel      = None
+        self._outamp       = None
+        self._hsspeed      = None
+        self._vsspeed      = None
+        self._serial       = None
+        self._exposure     = None
+        self._accumulate   = None
+        self._kinetic      = None
+        self._bitDepths    = []
+        self._preAmpGain   = []
+        self._VSSpeeds     = []
+        self._noGains      = None
+        self._imageArray   = []
+        self._noVSSpeeds   = None
+        self._HSSpeeds     = []
+        self._noADChannels = None
+        self._noHSSpeeds   = None
+        self._ReadMode     = None
 
-        # EPICS Charge Protection
-        # q_ChID = 'EBT-INJ-SCOPE-01:P1'
-        # self.qPV = pv(q_ChID)
-        # self.qVal = self.qPV.get
-        #
-        # self.qPV.add_callback(callback=qChange)
 
     def __del__(self):
+        self.SetTemperature(-10)
+        warm = False
+        while not warm:
+            time.sleep(0.5)
+            temp = self.GetTemperature
+            if temp > -13:
+                warm = True
+        self.CoolerOFF()
         error = self.dll.ShutDown()
+        self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
 
     def verbose(self, error, function=''):
         if self.verbosity is True:
@@ -105,9 +131,8 @@ class Andor:
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return ERROR_CODE[error]
 
-    def Initialize(self):
-        buf = 'C:/Program Files/Andor SOLIS/'
-        error = self.dll.Initialize(buf)
+    def Initialize(self, path):
+        error = self.dll.Initialize(path)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
         return error
 

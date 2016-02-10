@@ -32,6 +32,8 @@ import sys
 import time
 import platform
 import os
+from .errorcodes import ERROR_CODE
+
 
 #class AndorIdus(Instrument):
 class AndorIdus():
@@ -1075,46 +1077,3 @@ class AndorIdus():
             self.GetAcquiredData(data)
             self.SaveAsTxt("%03g.txt" % i)
 
-#####################################################
-
-# List of error codes
-ERROR_CODE = {
-    20001: "DRV_ERROR_CODES",
-    20002: "DRV_SUCCESS",
-    20003: "DRV_VXNOTINSTALLED",
-    20006: "DRV_ERROR_FILELOAD",
-    20007: "DRV_ERROR_VXD_INIT",
-    20010: "DRV_ERROR_PAGELOCK",
-    20011: "DRV_ERROR_PAGE_UNLOCK",
-    20013: "DRV_ERROR_ACK",
-    20024: "DRV_NO_NEW_DATA",
-    20026: "DRV_SPOOLERROR",
-    20034: "DRV_TEMP_OFF",
-    20035: "DRV_TEMP_NOT_STABILIZED",
-    20036: "DRV_TEMP_STABILIZED",
-    20037: "DRV_TEMP_NOT_REACHED",
-    20038: "DRV_TEMP_OUT_RANGE",
-    20039: "DRV_TEMP_NOT_SUPPORTED",
-    20040: "DRV_TEMP_DRIFT",
-    20050: "DRV_COF_NOTLOADED",
-    20053: "DRV_FLEXERROR",
-    20066: "DRV_P1INVALID",
-    20067: "DRV_P2INVALID",
-    20068: "DRV_P3INVALID",
-    20069: "DRV_P4INVALID",
-    20070: "DRV_INIERROR",
-    20071: "DRV_COERROR",
-    20072: "DRV_ACQUIRING",
-    20073: "DRV_IDLE",
-    20074: "DRV_TEMPCYCLE",
-    20075: "DRV_NOT_INITIALIZED",
-    20076: "DRV_P5INVALID",
-    20077: "DRV_P6INVALID",
-    20083: "P7_INVALID",
-    20089: "DRV_USBERROR",
-    20091: "DRV_NOT_SUPPORTED",
-    20099: "DRV_BINNING_ERROR",
-    20990: "DRV_NOCAMERA",
-    20991: "DRV_NOT_SUPPORTED",
-    20992: "DRV_NOT_AVAILABLE"
-}

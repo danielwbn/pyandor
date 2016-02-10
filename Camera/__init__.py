@@ -1,2 +1,2 @@
 
-from .andor import Andor
+from .andorcam import Andor
