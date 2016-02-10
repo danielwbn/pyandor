@@ -217,7 +217,7 @@ class Camera():
         return ERROR_CODE[error]
 
     def GetAcquiredData(self, imageArray):
-        if (self.ReadMode == 4):
+        if (self._ReadMode == 4):
             if (self.AcquisitionMode == 1):
                 dim = self._width * self._height / self._hbin / self._vbin
             elif (self.AcquisitionMode == 3):
