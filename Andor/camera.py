@@ -228,9 +228,12 @@ class Camera():
             elif (self._AcquisitionMode == 3):
                 dim = self._width * self._scans
 
-        cimageArray = c_int * int(round(dim,0))
+        print(dim)
+        dim_c = c_int(dim)
+        print(dim_c)
+        cimageArray = c_int * dim_c
         cimage = cimageArray()
-        error = self._dll.GetAcquiredData(pointer(cimage), dim)
+        error = self._dll.GetAcquiredData(pointer(cimage), dim_c)
         self.verbose(ERROR_CODE[error], sys._getframe().f_code.co_name)
 
         for i in range(len(cimage)):
