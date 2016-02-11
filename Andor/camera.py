@@ -60,7 +60,8 @@ class Camera():
                 raise RuntimeError("Only 64bit Version is supported")
         # for Linux
         elif platform.system() == "Linux":
-            self._init_path = "/usr/local/etc/andor&"
+            #self._init_path = "/usr/local/etc/andor"
+            self._init_path = ""
             dllname = "/usr/local/lib/libandor.so"
             self._dll = cdll.LoadLibrary(dllname)
         else:
