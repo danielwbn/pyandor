@@ -60,7 +60,7 @@ class Camera():
                 raise RuntimeError("Only 64bit Version is supported")
         # for Linux
         elif platform.system() == "Linux":
-            self._init_path = "/usr/local/etc/andor"
+            self._init_path = "/usr/local/etc/andor&"
             dllname = "/usr/local/lib/libandor.so"
             self._dll = cdll.LoadLibrary(dllname)
         else:
@@ -68,26 +68,12 @@ class Camera():
 
         self._verbosity = True
 
-        # Initialize the device
-        error = self.Initialize(self._init_path)
-        if error == 20002:
-            self.GetCameraSerialNumber()
-            print("Camera %s initalized" % (self._serial))
-        else:
-            raise RuntimeError("Camera could not be initialized, aborting.")
+       # Initiate parameters
 
-        cw = c_int()
-        ch = c_int()
-        self._dll.GetDetector(byref(cw), byref(ch))
-
-        # Initiate parameters
-        self._width        = cw.value
-        self._height       = ch.value
         self._temperature  = None
         self._set_T        = None
         self._gain         = None
         self._gainRange    = None
-        self._status       = ERROR_CODE[error]
         self._verbosity    = True
         self._preampgain   = None
         self._channel      = None
@@ -109,6 +95,23 @@ class Camera():
         self._noHSSpeeds   = None
         self._ReadMode     = None
         self._cooling      = False
+
+        # Initialize the device
+        error = self.Initialize(self._init_path)
+        if error == 20002:
+            self.GetCameraSerialNumber()
+            print("Camera %s initalized" % (self._serial))
+        else:
+            raise RuntimeError("Camera could not be initialized, aborting.")
+
+        self._status       = ERROR_CODE[error]
+
+        cw = c_int()
+        ch = c_int()
+        self._dll.GetDetector(byref(cw), byref(ch))
+
+        self._width        = cw.value
+        self._height       = ch.value
 
 
     def __del__(self):
